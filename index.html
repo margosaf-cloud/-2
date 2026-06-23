@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Стрим руководителей</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg-primary: #000000;
+            --bg-secondary: #1a1a1a;
+            --text-primary: #ffffff;
+            --text-secondary: #b0b0b0;
+            --accent-yellow: #f9d949;
+            --accent-red: #ea3c24;
+            --accent-green: #4ade80;
+            --gray-dark: #323232;
+        }
+
+        html, body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        .presentation {
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .slide {
+            display: none;
+            height: 100vh;
+            width: 100vw;
+            padding: 60px 80px;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        .slide.active { display: flex; flex-direction: column; }
+
+        .slide--title {
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+        }
+
+        .slide--title h1 { font-size: 72px; font-weight: 700; margin-bottom: 20px; }
+        .slide--title h1 span { color: var(--accent-yellow); }
+        .slide--title .subtitle { font-size: 24px; color: var(--text-secondary); }
+
+        .slide--section { justify-content: center; align-items: center; text-align: center; }
+
+        .slide--content { gap: 40px; }
+
+        .nav-bar {
+            display: flex;
+            gap: 40px;
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 60px;
+        }
+
+        .nav-bar span {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .nav-bar span::before {
+            content: '';
+            display: block;
+            width: 24px;
+            height: 2px;
+            background: var(--accent-yellow);
+        }
+
+        .nav-bar span.active { color: var(--accent-yellow); }
+
+        .slide-header { margin-bottom: 40px; }
+        .slide-header h2 { font-size: 42px; font-weight: 600; margin-bottom: 16px; }
+        .slide-header .accent { color: var(--accent-yellow); }
+        .slide-header p { font-size: 18px; color: var(--text-secondary); max-width: 800px; }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+            flex: 1;
+        }
+
+        .stat-card {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .stat-card__value { font-size: 64px; font-weight: 700; color: var(--accent-yellow); }
+        .stat-card__label { font-size: 16px; color: var(--text-secondary); }
+        .stat-card--red .stat-card__value { color: var(--accent-red); }
+        .stat-card--white .stat-card__value { color: white; }
+
+        .metrics-row { display: flex; gap: 40px; margin-bottom: 40px; }
+
+        .metric-box {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 24px 32px;
+            min-width: 200px;
+        }
+
+        .metric-box__label { font-size: 14px; color: var(--text-secondary); margin-bottom: 8px; }
+        .metric-box__value { font-size: 36px; font-weight: 700; }
+        .metric-box__value.red { color: var(--accent-red); }
+        .metric-box__value.yellow { color: var(--accent-yellow); }
+        .metric-box__value.green { color: var(--accent-green); }
+
+        .info-cards { display: flex; flex-direction: column; gap: 20px; flex: 1; }
+
+        .info-card {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 24px 32px;
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            border-left: 4px solid var(--accent-yellow);
+        }
+
+        .info-card--red { border-left-color: var(--accent-red); }
+        .info-card__icon {
+            width: 48px;
+            height: 48px;
+            background: rgba(249, 217, 73, 0.1);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .info-card--red .info-card__icon { background: rgba(234, 60, 36, 0.1); }
+        .info-card__text { font-size: 18px; line-height: 1.5; }
+
+        .two-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; flex: 1; }
+        .column { display: flex; flex-direction: column; gap: 20px; }
+        .column-title { font-size: 24px; font-weight: 600; padding-bottom: 16px; border-bottom: 2px solid var(--gray-dark); }
+        .column-title.yellow { color: var(--accent-yellow); }
+
+        .list-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            padding: 16px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+        }
+
+        .list-item__marker {
+            width: 32px;
+            height: 32px;
+            background: var(--accent-yellow);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 14px;
+            color: black;
+            flex-shrink: 0;
+        }
+
+        .list-item__text { font-size: 16px; line-height: 1.6; }
+
+        .timeline {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            flex: 1;
+            padding-left: 40px;
+            border-left: 3px solid var(--gray-dark);
+        }
+
+        .timeline-item { position: relative; padding-left: 40px; }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -48px;
+            top: 8px;
+            width: 16px;
+            height: 16px;
+            background: var(--accent-yellow);
+            border-radius: 50%;
+            border: 3px solid var(--bg-primary);
+        }
+
+        .timeline-item__date { font-size: 14px; color: var(--accent-yellow); margin-bottom: 4px; }
+        .timeline-item__title { font-size: 18px; font-weight: 600; }
+        .timeline-item__desc { font-size: 14px; color: var(--text-secondary); margin-top: 4px; }
+
+        .targets-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; flex: 1; }
+
+        .target-card {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 30px;
+        }
+
+        .target-card__title { font-size: 24px; font-weight: 700; margin-bottom: 24px; }
+
+        .target-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--gray-dark);
+        }
+
+        .target-row:last-child { border-bottom: none; }
+        .target-row__zone { font-weight: 600; }
+        .target-row__zone.green { color: var(--accent-green); }
+        .target-row__zone.yellow { color: var(--accent-yellow); }
+        .target-row__zone.red { color: var(--accent-red); }
+
+        .questions {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .questions h2 { font-size: 64px; margin-bottom: 20px; }
+        .questions .date { font-size: 24px; color: var(--text-secondary); }
+
+        .progress {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            height: 4px;
+            background: var(--accent-yellow);
+            transition: width 0.3s ease;
+        }
+
+        .counter {
+            position: fixed;
+            bottom: 20px;
+            right: 40px;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .nav-buttons {
+            position: fixed;
+            bottom: 20px;
+            left: 40px;
+            display: flex;
+            gap: 12px;
+        }
+
+        .nav-btn {
+            background: var(--bg-secondary);
+            border: 1px solid var(--gray-dark);
+            color: var(--text-primary);
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+
+        .nav-btn:hover {
+            background: var(--gray-dark);
+            border-color: var(--accent-yellow);
+        }
+
+        @media (max-width: 1200px) {
+            .slide { padding: 40px 50px; }
+            .slide--title h1 { font-size: 56px; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+    <div class="presentation" id="presentation">
+
+        <!-- Слайд 1: Стрим руководителей -->
+        <div class="slide slide--title active" data-slide="1">
+            <h1>Стрим <span>руководителей</span></h1>
+            <p class="subtitle">июнь, 2026</p>
+        </div>
+
+        <!-- Слайд 2: О чём расскажем -->
+        <div class="slide slide--content" data-slide="2">
+            <div class="slide-header">
+                <h2>О чём расскажем</h2>
+            </div>
+            <div class="info-cards" style="max-width: 600px;">
+                <div class="list-item" style="padding: 30px 40px;">
+                    <span class="list-item__marker">1</span>
+                    <span class="list-item__text" style="font-size: 28px;">Трек Перезагрузка</span>
+                </div>
+                <div class="list-item" style="padding: 30px 40px;">
+                    <span class="list-item__marker">2</span>
+                    <span class="list-item__text" style="font-size: 28px;">Go Heads</span>
+                </div>
+                <div class="list-item" style="padding: 30px 40px;">
+                    <span class="list-item__marker">3</span>
+                    <span class="list-item__text" style="font-size: 28px;">All Heads</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Слайд 3: Перезагрузка -->
+        <div class="slide slide--title" data-slide="3">
+            <h1><span>Перезагрузка</span></h1>
+            <p class="subtitle">трек для руководителей с плохими метриками<br>(высокий отток и низкий тимбар)</p>
+        </div>
+
+        <!-- Слайд 4: Статистика -->
+        <div class="slide slide--content" data-slide="4">
+            <div class="slide-header">
+                <h2>Статистика первого потока</h2>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; flex: 1; align-items: start;">
+                <div style="background: var(--bg-secondary); border-radius: 16px; padding: 40px; text-align: center; border-top: 4px solid var(--accent-red);">
+                    <div style="font-size: 72px; font-weight: 700; color: var(--accent-red);">75</div>
+                    <div style="font-size: 18px; margin-top: 16px;">руководителей с красным<br>ТБ H2 2025</div>
+                </div>
+                <div style="background: var(--bg-secondary); border-radius: 16px; padding: 40px; text-align: center; border-top: 4px solid var(--accent-yellow);">
+                    <div style="font-size: 72px; font-weight: 700; color: var(--accent-yellow);">101</div>
+                    <div style="font-size: 18px; margin-top: 16px;">руководитель с жёлтым<br>ТБ H2 2025</div>
+                </div>
+                <div style="background: var(--bg-secondary); border-radius: 16px; padding: 40px; text-align: center; border-top: 4px solid var(--accent-yellow);">
+                    <div style="font-size: 72px; font-weight: 700; color: var(--text-primary);">12</div>
+                    <div style="font-size: 18px; margin-top: 16px;">руководителей добавили<br>дополнительно по запросу HR BP сервисов</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Слайд 5: Выход из программы -->
+        <div class="slide slide--content" data-slide="5" style="padding-top: 20px;">
+            <div class="slide-header" style="margin-bottom: 15px;">
+                <h2>Выход из программы</h2>
+            </div>
+            <img src="images/exit-program.png" alt="Выход из программы" style="max-width: 100%; max-height: 75vh; object-fit: contain;">
+        </div>
+
+        <!-- Слайд 6: Продолжают работать в программе -->
+        <div class="slide slide--content" data-slide="6" style="padding-top: 20px;">
+            <div class="slide-header" style="margin-bottom: 15px;">
+                <h2>Продолжают работать в программе</h2>
+            </div>
+            <img src="images/continue-program.png" alt="Продолжают работать в программе" style="max-width: 100%; max-height: 75vh; object-fit: contain;">
+        </div>
+
+        <!-- Слайд 7: Program changes intro -->
+        <div class="slide slide--content" data-slide="7">
+            <div class="slide-header">
+                <h2>Перезагрузка — меняем фокус программы</h2>
+            </div>
+            <p style="font-size: 18px; line-height: 1.8; color: var(--text-secondary); margin-bottom: 40px;">
+                Это не обязательный набор HR-инструментов, а гибкая программа для поддержки руководителя. Мы подсвечиваем важность метрик, предлагаем инструменты для работы с командой, а выбор действий и ответственность за результат остаются на руководителе.
+            </p>
+            <div class="two-columns" style="gap: 40px;">
+                <div class="column">
+                    <div class="column-title yellow">Активный сценарий</div>
+                    <p style="color: var(--text-secondary); line-height: 1.8; font-size: 15px;">
+                        Руководитель выбирает подходящие инструменты: оценку по свойствам, менторинг, вебинары или мастермайнды. При необходимости обращается к HR BP или L&D за поддержкой, а в тикете фиксирует план действий и промежуточные результаты.
+                    </p>
+                </div>
+                <div class="column">
+                    <div class="column-title yellow">Пассивный сценарий</div>
+                    <p style="color: var(--text-secondary); line-height: 1.8; font-size: 15px;">
+                        Если инструменты программы сейчас неактуальны, руководитель может работать с командой самостоятельно. В этом случае тикет остаётся точкой для трекинга метрик, фиксации договорённостей и напоминаний о контрольных точках.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Слайд 8: Timeline HR BP -->
+        <div class="slide slide--content" data-slide="8">
+            <div class="slide-header">
+                <h2>Таймлайн программы</h2>
+                <p>Подтверждение участия — Тикет для HR BP</p>
+            </div>
+            <div class="info-cards">
+                <div class="info-card">
+                    <div class="info-card__icon">✓</div>
+                    <div class="info-card__text">HR BP подтверждает участие в тикете</div>
+                </div>
+                <div class="info-card">
+                    <div class="info-card__icon">📋</div>
+                    <div class="info-card__text">Подготовка к разговору с участником: в тикете есть флоу и материалы для подготовки ко встрече</div>
+                </div>
+                <div class="info-card">
+                    <div class="info-card__icon">🎯</div>
+                    <div class="info-card__text">Метрики и критерии программы</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Слайд 11: Roles -->
+        <div class="slide slide--content" data-slide="9">
+            <div class="slide-header">
+                <h2>Роли в процессе</h2>
+            </div>
+            <div class="two-columns">
+                <div class="column">
+                    <div class="column-title yellow">Для HR BP</div>
+                    <div class="list-item">
+                        <span class="list-item__marker">✓</span>
+                        <span class="list-item__text">Валидируют участников в тикетах: подтверждают или отклоняют участие</span>
+                    </div>
+                    <div class="list-item">
+                        <span class="list-item__marker">✓</span>
+                        <span class="list-item__text">При отказе обязательно указывают причину в форме</span>
+                    </div>
+                    <div class="list-item">
+                        <span class="list-item__marker">✓</span>
+                        <span class="list-item__text">Не выбирают инструменты за участников — решение остаётся за руководителем</span>
+                    </div>
+                </div>
+                <div class="column">
+                    <div class="column-title yellow">Для участников</div>
+                    <div class="list-item">
+                        <span class="list-item__marker">✓</span>
+                        <span class="list-item__text">После подтверждения получают тикет с метриками и рекомендациями</span>
+                    </div>
+                    <div class="list-item">
+                        <span class="list-item__marker">✓</span>
+                        <span class="list-item__text">Участвуют во вводном вебинаре о программе</span>
+                    </div>
+                    <div class="list-item">
+                        <span class="list-item__marker">✓</span>
+                        <span class="list-item__text">Самостоятельно выбирают инструменты и фиксируют план</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== БЛОК GO HEADS ==================== -->
+
+        <!-- Слайд 25: Go Heads - титульный -->
+        <div class="slide slide--title" data-slide="10">
+            <h1><span>Go Heads</span></h1>
+            <p class="subtitle">Трек адаптации для новых руководителей</p>
+        </div>
+
+        <!-- Слайд 26: Метрики Go Heads -->
+        <div class="slide slide--content" data-slide="11">
+            <div class="slide-header">
+                <h2>Трек адаптации для новых руководителей</h2>
+                <p>Результаты работы</p>
+            </div>
+            <div class="stats-grid" style="grid-template-columns: repeat(4, 1fr);">
+                <div class="stat-card">
+                    <span class="stat-card__value">127</span>
+                    <span class="stat-card__label">руководителей в треке</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-card__value">600</span>
+                    <span class="stat-card__label">участников прошли обучение по программам жизненного цикла</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-card__value">51,5%</span>
+                    <span class="stat-card__label">Средний NPS (хорошо для программ по процессам)</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-card__value">14</span>
+                    <span class="stat-card__label">внутренних экспертов подготовлено</span>
+                </div>
+            </div>
+            <div class="info-card" style="margin-top: 40px;">
+                <div class="info-card__icon">✓</div>
+                <div class="info-card__text">Спасибо, что откликались на входящие тикеты!</div>
+            </div>
+        </div>
+
+        <!-- Слайд 27: Охват и проблемы -->
+        <div class="slide slide--content" data-slide="12">
+            <div class="slide-header">
+                <h2>Охват обязательными программами</h2>
+            </div>
+            <div class="two-columns">
+                <div class="column">
+                    <div class="stat-card" style="text-align: center; padding: 30px;">
+                        <span class="stat-card__value" style="font-size: 64px;">80%</span>
+                        <span class="stat-card__label" style="font-size: 16px;">Цель</span>
+                    </div>
+                </div>
+                <div class="column">
+                    <div class="stat-card stat-card--red" style="text-align: center; padding: 30px;">
+                        <span class="stat-card__value" style="font-size: 64px;">75%</span>
+                        <span class="stat-card__label" style="font-size: 16px;">Факт</span>
+                    </div>
+                </div>
+            </div>
+            <p style="margin-top: 20px; margin-bottom: 10px; color: var(--text-secondary); font-size: 16px;">Причины:</p>
+<div class="info-cards" style="margin-top: 20px; gap: 12px;">
+                <div class="info-card info-card--red" style="padding: 16px 24px;">
+                    <div class="info-card__icon" style="width: 28px; height: 28px; font-size: 14px;">1</div>
+                    <div class="info-card__text" style="font-size: 16px;">Не проходят индакшен-встречи → руководители не понимают зачем и обязательность</div>
+                </div>
+                <div class="info-card info-card--red" style="padding: 16px 24px;">
+                    <div class="info-card__icon" style="width: 28px; height: 28px; font-size: 14px;">2</div>
+                    <div class="info-card__text" style="font-size: 16px;">Партнёры согласовывают уже опытных руководителей</div>
+                </div>
+            </div>
+            </div>
+        </div>
+
+        <!-- Слайд 28: Call to Action -->
+        <div class="slide slide--content" data-slide="13">
+            <div class="slide-header">
+                <h2>Call to Action</h2>
+            </div>
+            <div class="info-cards" style="max-width: 900px;">
+                <div class="info-card">
+                    <div class="info-card__icon">1</div>
+                    <div class="info-card__text"><strong>Проводить индакшен-встречи</strong> и говорить там про обучение (toolbox + вебинары по процессам)</div>
+                </div>
+                <div class="info-card">
+                    <div class="info-card__icon">2</div>
+                    <div class="info-card__text"><strong>Согласовать только новичков</strong>, которым обязательно проходить всё обучение</div>
+                </div>
+                <div class="info-card">
+                    <div class="info-card__icon">3</div>
+                    <div class="info-card__text"><strong>Если не обязательно</strong> — отклонять наш тикет и заводить через форму. Если в форму завели — мы себе <strong>НЕ</strong> считаем ЦА и <strong>НЕ</strong> пингуем, просто приглашаем везде</div>
+                </div>
+            </div>
+            <div style="margin-top: 40px; padding: 24px; background: var(--bg-secondary); border-radius: 12px; text-align: center;">
+                <a href="https://forms.yandex-team.ru/ext/surveys/13803765/" style="color: var(--accent-yellow); font-size: 18px; text-decoration: none;">→ Форма для добавления участников</a>
+            </div>
+        </div>
+
+        <!-- Слайд 29: Что нового -->
+        <div class="slide slide--content" data-slide="14">
+            <div class="slide-header">
+                <h2>Что нового в Go Heads</h2>
+            </div>
+            <div class="info-cards" style="max-width: 900px;">
+                <div class="info-card">
+                    <div class="info-card__icon">✨</div>
+                    <div class="info-card__text"><strong>Красивое приветственное сообщение</strong> в дизайне БГ</div>
+                </div>
+                <div class="info-card">
+                    <div class="info-card__icon">📝</div>
+                    <div class="info-card__text"><strong>Тестирование в конце</strong> (экзамен / чекпоинт)</div>
+                </div>
+                <div class="info-card">
+                    <div class="info-card__icon">📊</div>
+                    <div class="info-card__text"><strong>Виджет про команду</strong> — Coming Soon!</div>
+                </div>
+                <div class="info-card">
+                    <div class="info-card__icon">📈</div>
+                    <div class="info-card__text"><strong>Виджет про статус прохождения программы</strong> — Coming Soon!</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Слайд 30: Скриншоты нового -->
+        <div class="slide slide--content" data-slide="15">
+            <div class="slide-header">
+                <h2>Скриншоты</h2>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; flex: 1;">
+                <div style="display: flex; flex-direction: column; gap: 16px;">
+                    <img src="images/welcome-message.png" alt="Приветственное сообщение" style="width: 100%; border-radius: 12px; border: 1px solid var(--gray-dark);">
+                    <p style="text-align: center; color: var(--text-secondary); font-size: 14px;">Приветственное сообщение в дизайне БГ</p>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 16px;">
+                    <img src="images/widget-team.png" alt="Виджет про команду" style="width: 100%; border-radius: 12px; border: 1px solid var(--gray-dark);">
+                    <p style="text-align: center; color: var(--text-secondary); font-size: 14px;">Виджет про команду</p>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 16px;">
+                    <img src="images/widget-status.png" alt="Виджет про статус" style="width: 100%; border-radius: 12px; border: 1px solid var(--gray-dark);">
+                    <p style="text-align: center; color: var(--text-secondary); font-size: 14px;">Виджет про статус прохождения программы</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Слайд 16: Questions -->
+        <div class="slide slide--title" data-slide="16">
+            <h1>Вопросы</h1>
+        </div>
+
+        <div class="progress" id="progress"></div>
+        <div class="counter" id="counter">1 / 16</div>
+
+        <div class="nav-buttons">
+            <button class="nav-btn" onclick="prevSlide()">← Назад</button>
+            <button class="nav-btn" onclick="nextSlide()">Вперёд →</button>
+        </div>
+    </div>
+
+    <script>
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+        let currentSlide = 0;
+
+        function showSlide(index) {
+            slides.forEach(slide => slide.classList.remove('active'));
+            slides[index].classList.add('active');
+            document.getElementById('counter').textContent = `${index + 1} / ${totalSlides}`;
+            document.getElementById('progress').style.width = `${((index + 1) / totalSlides) * 100}%`;
+        }
+
+        function nextSlide() {
+            if (currentSlide < totalSlides - 1) {
+                currentSlide++;
+                showSlide(currentSlide);
+            }
+        }
+
+        function prevSlide() {
+            if (currentSlide > 0) {
+                currentSlide--;
+                showSlide(currentSlide);
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); nextSlide(); }
+            else if (e.key === 'ArrowLeft') { e.preventDefault(); prevSlide(); }
+        });
+
+        let touchStartX = 0;
+        document.addEventListener('touchstart', (e) => { touchStartX = e.touches[0].clientX; });
+        document.addEventListener('touchend', (e) => {
+            const diff = touchStartX - e.changedTouches[0].clientX;
+            if (Math.abs(diff) > 50) { if (diff > 0) nextSlide(); else prevSlide(); }
+        });
+
+        showSlide(0);
+    </script>
+</body>
+</html>
